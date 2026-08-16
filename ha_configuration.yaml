@@ -1,0 +1,31 @@
+# 1. Real-time Power Sensor (MQTT)
+mqtt:
+  sensor:
+    - name: "Grid Power Usage"
+      unique_id: "emerald_grid_power_usage"
+      state_topic: "home/emerald/power/watts"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+
+# 2. Cumulative Energy Sensor (Template/Trigger)
+template:
+  - trigger:
+      - platform: mqtt
+        topic: "home/emerald/energy/pulses"
+    sensor:
+      - name: "Total Grid Import"
+        unique_id: "emerald_accumulator_kwh"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:lightning-bolt-circle
+        state: >
+          {# 1. Get the new pulses from the MQTT message #}
+          {% set new_pulses = trigger.payload | int(0) %}
+          
+          {# 2. Convert to kWh (1000 pulses = 1 kWh) #}
+          {% set new_kwh = new_pulses / 1000.0 %}
+          
+          {# 3. Add to the existing total (default to 0 if starting fresh) #}
+          {{ (this.state | float(0)) + new_kwh }}
