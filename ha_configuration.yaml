@@ -1,20 +1,39 @@
-# 1. Real-time Power Sensor (MQTT)
+# Home Assistant configuration for the Emerald bridge. Kept in sync with the
+# configuration that is live in ha-config (last synced 2026-10-23).
+#
+# Merge these blocks into your own configuration.yaml. If you already have a
+# top-level `mqtt:`, `template:` or `sensor:` key, add the list items under
+# that existing key instead of repeating the key.
+#
+# Note: the power sensor's unique_id was `emerald_grid_power_usage` in earlier
+# versions of this file. Changing a unique_id makes HA create a new entity, so
+# if you configured it from the old version, keep your existing unique_id.
+
+# 1. MQTT sensors published by emerald.py
 mqtt:
   sensor:
+    # Real-time power draw (graphs / instant view)
     - name: "Grid Power Usage"
-      unique_id: "emerald_grid_power_usage"
+      unique_id: "emerald_power_watts"
       state_topic: "home/emerald/power/watts"
       unit_of_measurement: "W"
       device_class: power
       state_class: measurement
 
-# 2. Cumulative Energy Sensor (Template/Trigger)
+    # Raw pulse count from the device
+    - name: "Grid Pulse Count"
+      unique_id: "emerald_energy_pulses"
+      state_topic: "home/emerald/energy/pulses"
+      state_class: total
+      unit_of_measurement: "pulses"
+
+# 2. Cumulative energy sensor (trigger-based template)
 template:
   - trigger:
       - platform: mqtt
         topic: "home/emerald/energy/pulses"
     sensor:
-      - name: "Total Grid Import"
+      - name: "Total Grid Energy"
         unique_id: "emerald_accumulator_kwh"
         unit_of_measurement: "kWh"
         device_class: energy
@@ -23,9 +42,19 @@ template:
         state: >
           {# 1. Get the new pulses from the MQTT message #}
           {% set new_pulses = trigger.payload | int(0) %}
-          
+
           {# 2. Convert to kWh (1000 pulses = 1 kWh) #}
           {% set new_kwh = new_pulses / 1000.0 %}
-          
-          {# 3. Add to the existing total (default to 0 if starting fresh) #}
+
+          {# 3. Add to the existing total #}
           {{ (this.state | float(0)) + new_kwh }}
+
+# 3. 24h peak power (interest/stats only)
+sensor:
+  - platform: statistics
+    name: "Grid Power Peak (24h)"
+    unique_id: grid_power_peak_24h
+    entity_id: sensor.emerald_grid_power_usage
+    state_characteristic: value_max
+    max_age:
+      hours: 24
