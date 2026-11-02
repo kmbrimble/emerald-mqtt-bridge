@@ -1,6 +1,6 @@
 # Emerald to MQTT Bridge
 
-> Development happens on a private forge; this repository is a read-only mirror. Releases are published here.
+> **Archived.** This project now lives only on a private forge; this GitHub copy is frozen as of 2 Nov 2026 and will not be updated.
 
 This project bridges an Emerald Electricity Advisor to an MQTT broker via a Raspberry Pi using Bluetooth Low Energy (BLE). It reads real-time power usage and pulse data from the Emerald device and publishes it to MQTT for ingestion by Home Assistant.
 

@@ -1,9 +1,9 @@
 name: CI
 
-# Gitea is the primary forge (GitHub is a read-only push mirror kept so others can clone the project). The job below is the
-# required status check on main ("CI / check (pull_request)"). There is no hardware-free behavioural test (the script talks to a BLE
-# device), so the gate is: the script compiles, ruff finds no syntax errors or pyflakes problems (undefined names, unused imports),
-# and the shipped Home Assistant YAML and systemd unit still parse.
+# Gitea is the only home of this repo (the GitHub copy is archived and frozen). The job below is the required status check on main
+# ("CI / check (pull_request)"). There is no hardware-free behavioural test (the script talks to a BLE device), so the gate is: the script
+# compiles, ruff finds no syntax errors or pyflakes problems (undefined names, unused imports), and the shipped Home Assistant YAML and
+# systemd unit still parse.
 
 on:
   pull_request:
