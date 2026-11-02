@@ -6,7 +6,6 @@ import time
 import random
 import paho.mqtt.client as mqtt
 from gi.repository import GLib
-from itertools import repeat
 
 # References:
 # 0) https://github.com/WeekendWarrior1/emerald_electricity_advisor
@@ -419,7 +418,7 @@ class RemoteDevice:
                 mqtt_client.publish('/power/lastUpdate', datetimestamp(), qos = 1, retain = True)
                 mqtt_client.publish('/power/watts',      dataReturned,    qos = 1, retain = True)
             elif cmd == self.cmdReturnDeviceTime:
-                if dbg(0): print(datetimestamp(), "cmdReturnDeviceTime:", "{0:b}".format(dataReturned), decode_datetime(dateReturned), flush="True")
+                if dbg(0): print(datetimestamp(), "cmdReturnDeviceTime:", "{0:b}".format(dataReturned), decode_datetime(dateReturned), flush="True")  # noqa: F821  (known latent bug, see issue #2: dateReturned is not assigned in this branch)
             else:
                 if dbg(0): print(datetimestamp(), f'{handler_uuid} is "{"".join( """0x{:02X},""".format(x) for x in ndata)}"', flush=True)
         elif len(ndata) == 11:

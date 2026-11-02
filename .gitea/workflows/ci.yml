@@ -1,0 +1,50 @@
+name: CI
+
+# Gitea is the primary forge (GitHub is a read-only push mirror kept so others can clone the project). The job below is the
+# required status check on main ("CI / check (pull_request)"). There is no hardware-free behavioural test (the script talks to a BLE
+# device), so the gate is: the script compiles, ruff finds no syntax errors or pyflakes problems (undefined names, unused imports),
+# and the shipped Home Assistant YAML and systemd unit still parse.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+
+      - name: Python syntax
+        run: python3 -m py_compile emerald.py
+
+      - name: ruff (E9 syntax errors, F pyflakes)
+        run: |
+          set -euo pipefail
+          pip3 install -q --break-system-packages ruff
+          python3 -m ruff check --select E9,F emerald.py
+
+      - name: Shipped YAML and systemd unit parse
+        run: |
+          set -euo pipefail
+          pip3 install -q --break-system-packages pyyaml
+          python3 - <<'PY'
+          import configparser, yaml
+
+          class Loader(yaml.SafeLoader):
+              pass
+
+          # Home Assistant YAML uses custom tags (!secret, !include ...): accept and ignore them.
+          Loader.add_multi_constructor("!", lambda loader, suffix, node: None)
+          with open("ha_configuration.yaml") as f:
+              config = yaml.load(f, Loader=Loader)
+          assert isinstance(config, dict) and config, "ha_configuration.yaml is empty or not a mapping"
+          print("ha_configuration.yaml parses; top-level keys:", ", ".join(config))
+
+          unit = configparser.ConfigParser(strict=False)
+          unit.optionxform = str
+          unit.read("emerald-bridge.service")
+          assert unit.has_option("Service", "ExecStart"), "emerald-bridge.service has no [Service] ExecStart"
+          print("emerald-bridge.service parses; ExecStart:", unit["Service"]["ExecStart"])
+          PY
